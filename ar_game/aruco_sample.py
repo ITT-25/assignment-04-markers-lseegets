@@ -18,9 +18,9 @@ detector = aruco.ArucoDetector(aruco_dict, aruco_params)
 cap = cv2.VideoCapture(video_id)
 
 # Camera resolution
-width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-destination = np.float32(np.array([[0, 0], [width, 0], [width, height], [0, height]]))
+# width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+# height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+#destination = np.float32(np.array([[0, 0], [width, 0], [width, height], [0, height]]))
 
 
 # Return a numpy array with values sorted by position to match the destination matrix
@@ -43,9 +43,8 @@ def sort_markers(arr):
     return np.float32(np.array([top_left, top_right, bottom_right, bottom_left]))
 
 
-while True:
-    # Capture a frame from the webcam
-    ret, frame = cap.read()
+def display_board(frame, destination, width, height):
+    global detector, positions
 
     # Convert the frame to grayscale
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -67,12 +66,40 @@ while True:
             mat = cv2.getPerspectiveTransform(arr, destination)
             frame = cv2.warpPerspective(frame, mat, (width, height))
 
-    # Display the frame
-    cv2.imshow('frame', frame)
+            return frame
+    
+    return None
 
-    # Wait for a key press and check if it's the 'q' key
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+# while True:
+#     # Capture a frame from the webcam
+#     ret, frame = cap.read()
+
+#     # Convert the frame to grayscale
+#     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+#     # Detect ArUco markers in the frame
+#     corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
+
+#     # Check if marker is detected
+#     if ids is not None:
+#         if len(ids) == 4:
+#             # Draw lines along the sides of the marker
+#             aruco.drawDetectedMarkers(frame, corners)
+#             positions.clear()
+#             for i in range(4):
+#                 marker_corners = corners[i][0]
+#                 pos = np.mean(marker_corners, axis=0)   # Get the center of each marker
+#                 positions.append((pos))
+#             arr = sort_markers(positions)
+#             mat = cv2.getPerspectiveTransform(arr, destination)
+#             frame = cv2.warpPerspective(frame, mat, (width, height))
+
+#     # Display the frame
+#     cv2.imshow('frame', frame)
+
+#     # Wait for a key press and check if it's the 'q' key
+#     if cv2.waitKey(1) & 0xFF == ord('q'):
+#         break
 
 # Release the video capture object and close all windows
 cap.release()

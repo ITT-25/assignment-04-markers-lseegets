@@ -4,6 +4,8 @@ import pyglet
 from PIL import Image
 import sys
 
+from aruco_sample import display_board
+
 video_id = 0
 
 if len(sys.argv) > 1:
@@ -33,8 +35,11 @@ def cv2glet(img,fmt):
 # Create a video capture object for the webcam
 cap = cv2.VideoCapture(video_id)
 
-WINDOW_WIDTH = 640
-WINDOW_HEIGHT = 480
+# WINDOW_WIDTH = 640
+# WINDOW_HEIGHT = 480
+WINDOW_WIDTH = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+WINDOW_HEIGHT = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+destination = np.float32(np.array([[0, 0], [WINDOW_WIDTH, 0], [WINDOW_WIDTH, WINDOW_HEIGHT], [0, WINDOW_HEIGHT]]))
 
 window = pyglet.window.Window(WINDOW_WIDTH, WINDOW_HEIGHT)
 
@@ -43,7 +48,12 @@ def on_draw():
     window.clear()
     ret, frame = cap.read()
     # TODO: do magic here
-    img = cv2glet(frame, 'BGR')
+    board = display_board(frame, destination, WINDOW_WIDTH, WINDOW_HEIGHT)
+    if board is not None:
+       img = cv2glet(board, 'BGR')
+       print("Board detected")
+    else:
+       img = cv2glet(frame, 'BGR')
     img.blit(0, 0, 0)
 
 pyglet.app.run()
