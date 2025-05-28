@@ -116,7 +116,7 @@ def on_draw():
     window.clear()
     img.blit(-WINDOW_WIDTH/2, -WINDOW_HEIGHT/2, 0)
     for model in models:
-            model.batch.draw()
+        model.batch.draw()
 
 
 def animate(dt):
@@ -140,7 +140,8 @@ if __name__ == "__main__":
     glEnable(GL_CULL_FACE)
 
     models = []
-    models.append(Model(path="enton.obj", id=6, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=270, rot_y=90, rot_z=270, scaling_factor=0.2))
+    models.append(Model(path="enton.obj", id=4, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=270, rot_y=90, rot_z=270, scaling_factor=0.2))
+    models.append(Model(path="Pokeball.obj", id=5, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=90, rot_y=0, rot_z=0, scaling_factor=30))
 
     # Set the application wide view matrix (camera):
     window.view = Mat4.look_at(position=Vec3(0, 0, WINDOW_Z), target=Vec3(0, 0, 0), up=Vec3(0, 1, 0))
