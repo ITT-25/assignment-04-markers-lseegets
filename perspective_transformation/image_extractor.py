@@ -1,17 +1,18 @@
 import cv2
 import numpy as np
+import os
 
-input_file = input("Path to input file: ")
-#file_destination = input("Output directory: ")
-#res = input("Resolution: ")
+# Inputs
+input_file = input("Path to the input file: ")
+file_destination = input("Full path for the output file (including .jpg extension): ")
+res = input("Output resolution in format WIDTHxHEIGHT (e.g., 1920x1080): ")
+dest_width, dest_height = map(int, res.lower().split('x'))
 
 input_points = []
 img_transformed = None
 
-#img = cv2.imread('sample_image.jpg')
 img = cv2.imread(input_file)
-HEIGHT, WIDTH, _ = img.shape
-DESTINATION = np.float32(np.array([[0, 0], [WIDTH, 0], [WIDTH, HEIGHT], [0, HEIGHT]]))
+DESTINATION = np.float32(np.array([[0, 0], [dest_width, 0], [dest_width, dest_height], [0, dest_height]]))
 WINDOW_NAME = 'Preview Window'
 
 cv2.namedWindow(WINDOW_NAME)
@@ -27,28 +28,34 @@ def mouse_callback(event, x, y, flags, param):
         if len(input_points) == 4:
             extract_image(input_points)
 
+# Extracting the area between the drawn points
 def extract_image(input_points):
     global img_transformed
     arr = np.float32(np.array(input_points))
     mat = cv2.getPerspectiveTransform(arr, DESTINATION)
-    img_transformed = cv2.warpPerspective(img, mat, (WIDTH, HEIGHT))
-    cv2.imshow("Extracted Rectangle", img_transformed)
+    img_transformed = cv2.warpPerspective(img, mat, (dest_width, dest_height))
+    cv2.imshow("Extracted Image", img_transformed)
 
 
 cv2.imshow(WINDOW_NAME, img)
 
 cv2.setMouseCallback(WINDOW_NAME, mouse_callback)
 
-cv2.waitKey(0)
-
 while True:
     key = cv2.waitKey(0)
-    if key == 27:   # ESCAPE key
+
+    # Start over by pressing the ESCAPE key
+    if key == 27:
         input_points = []
-        img = cv2.imread('sample_image.jpg')
+        img = cv2.imread(input_file)
         cv2.imshow(WINDOW_NAME, img)
-        if cv2.getWindowProperty('Extracted Rectangle', cv2.WND_PROP_VISIBLE) >= 1:
-            cv2.destroyWindow("Extracted Rectangle")
+        if cv2.getWindowProperty('Extracted Image', cv2.WND_PROP_VISIBLE) >= 1:
+            cv2.destroyWindow("Extracted Image")
+
+    # Save the image by pressing 's'
     elif key == ord('s'):
-        if cv2.getWindowProperty('Extracted Rectangle', cv2.WND_PROP_VISIBLE) >= 1:
-            cv2.imwrite('extracted_output.jpg', img_transformed)
+        if cv2.getWindowProperty('Extracted Image', cv2.WND_PROP_VISIBLE) >= 1:
+            cv2.imwrite(file_destination, img_transformed)
+
+    if cv2.getWindowProperty(WINDOW_NAME, cv2.WND_PROP_VISIBLE) < 1:
+        break
