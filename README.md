@@ -22,8 +22,7 @@
     ```
 
 - Specify the input file path, output file path, and desired resolution in the command line.
-- A window will open displaying the input image.
-- To extract a rectangular region, click four corner points on the image in order. For best results and minimal distortion, select the points in a consistent direction — either clockwise or counterclockwise.
+- A window will open displaying the input image. To extract a rectangular region, click four corner points on the image in order. For best results and minimal distortion, select the points in a consistent direction — either clockwise or counterclockwise.
 If you want to preserve the original orientation, start from the top-left corner and proceed clockwise.
 - Once four points have been selected, a new window with the extracted region displayed as a rectangle will open.
 - If you are dissatisfied with the result, press ESC to start over.
@@ -35,7 +34,7 @@ If you want to preserve the original orientation, start from the top-left corner
 - A webcam
 - A rectangular board with an AruCo marker in each corner
 
-## Playing the game
+## Playing the Game
 - Run the program with the following commands:
 
     ```
@@ -49,3 +48,21 @@ If you want to preserve the original orientation, start from the top-left corner
 - Once the time has elapsed, your score will be displayed on the screen. Press SPACE to restart the game.
 
 # AR Game - now 3D
+
+## Requirements
+-  A webcam
+- Two AruCo markers (IDs 4 and 5)
+
+## Playing the Game
+- Run the program with the following commands:
+
+    ```
+    cd ar_game_3d
+    py AR_game_3d.py
+    ```
+
+- Position the two markers in front of your webcam so that they are both recognized.
+- Make sure they are both visible at the same time and see what happens.
+
+## Sources
+Pokéball 3D Model by mitshaker ([Free3D](https://free3d.com/3d-model/pokeball-98387.html))
