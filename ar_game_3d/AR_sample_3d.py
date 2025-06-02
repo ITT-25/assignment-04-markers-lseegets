@@ -14,6 +14,14 @@ INVERSE_MATRIX = np.array([ [ 1.0, 1.0, 1.0, 1.0],
                             [-1.0,-1.0,-1.0,-1.0],
                             [-1.0,-1.0,-1.0,-1.0],
                             [ 1.0, 1.0, 1.0, 1.0]])
+MOVEMENT_SPEED = 10
+STAGNANT_ID = 4     # ID of the non-moving object's marker
+MOVING_ID = 5       # ID of the moving object's marker
+
+models = []
+stagnant_center = None  # center of the non-moving object's marker
+moving_center = None    # center of the moving object's marker
+current_moving_center = None    # current center of the moving object
 
 ## to convert color space of opencv to color space of pyglet
 ## https://gist.github.com/nkymut/1cb40ea6ae4de0cf9ded7332f1ca0d55
@@ -69,6 +77,8 @@ WINDOW_Z = 420
 ## setup pyglet image
 window = pyglet.window.Window(WINDOW_WIDTH, WINDOW_HEIGHT, resizable=False)
 
+label = pyglet.text.Label("YOU CAUGHT PSYDUCK!", font_name="Courier New", font_size=30, weight="bold", x=WINDOW_WIDTH // 12, y=WINDOW_HEIGHT // 6, anchor_x='center', anchor_y='center', color=(255, 255, 0, 255))
+
 ## setup the camera
 cap = cv2.VideoCapture(0)
 cameraMatrix = np.array([[534.34144579, 0., 339.15527836], [0., 534.68425882,  233.84359494], [0., 0., 1.]], dtype=np.float64)
@@ -79,21 +89,21 @@ aruco_dict = aruco.getPredefinedDictionary(aruco.DICT_6X6_250)
 aruco_params = aruco.DetectorParameters()
 detector = aruco.ArucoDetector(aruco_dict, aruco_params)
 
-## for animated/moving 3D objects
-# time = 0
 
+def handle_marker_detection(ids, corners):
+    global view_matrix, position, stagnant_center, moving_center, current_moving_center
 
-@window.event
-def on_draw():
-    global view_matrix, position
-    _, frame = cap.read()
+    stagnant_model = None
+    moving_model = None
+    for model in models:
+        if model._id == STAGNANT_ID:
+            stagnant_model = model
+        elif model._id == MOVING_ID:
+            moving_model = model
 
-    # Convert the frame to grayscale
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-    # Detect AruCo markers in the frame
-    corners, ids, rejectedImgPoints = detector.detectMarkers(gray)
-    aruco.drawDetectedMarkers(frame, corners)
+    # Reset the marker positions in case they go out of view
+    stagnant_center = None
+    moving_center = None
 
     if ids is not None:
         for i, marker_id in enumerate(ids):
@@ -109,14 +119,71 @@ def on_draw():
                                     [0.0       ,0.0       ,0.0       ,1.0    ]], dtype="object")
             view_matrix = view_matrix * INVERSE_MATRIX
             view_matrix = np.transpose(view_matrix)
-            for model in models:
-                model.setup_translation(marker_id, view_matrix, position, length)
+
+            # Save the positions of the two markers and set up the models
+            if marker_id == STAGNANT_ID:
+                stagnant_center = position
+                if stagnant_model:
+                    stagnant_model.setup_translation(STAGNANT_ID, view_matrix, position, length)
+            elif marker_id == MOVING_ID:
+                moving_center = position
+                if moving_model:
+                    moving_model.setup_translation(MOVING_ID, view_matrix, position, length)
+
+    # Check if both markers are visible
+    if (stagnant_center is not None) and (moving_center is not None):
+
+        # Start movement if it hasn't started
+        if current_moving_center is None:
+            current_moving_center = np.array(moving_center, dtype=float)
+
+        vec = np.array(stagnant_center) - np.array(moving_center)   # Vector between the two markers
+        distance = np.linalg.norm(vec)  # Length of vec
+
+        # Get unit vector as long as distance is not zero
+        if distance > 0:
+            direction = vec / distance
+        else:
+            direction = np.zeros(2)
+
+        # If the distance between current_moving_center and stagnant_center is smaller than MOVEMENT_SPEED
+        # (i.e., another step would overshoot the target), snap the moving model to the target. Otherwise,
+        # keep moving at MOVEMENT_SPEED in the direction calculated above
+        if np.linalg.norm(current_moving_center - np.array(stagnant_center)) < MOVEMENT_SPEED:
+            current_moving_center = np.array(stagnant_center, dtype=float)
+            if stagnant_model:
+                models.remove(stagnant_model)
+        else:
+            current_moving_center += direction * MOVEMENT_SPEED
+
+        # Update the position of the moving model
+        moving_model.update_position((float(current_moving_center[0]), float(current_moving_center[1])))
+
+    else:
+        current_moving_center = None
+
+
+@window.event
+def on_draw():
+    _, frame = cap.read()
+
+    # Convert the frame to grayscale
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    # Detect AruCo markers in the frame
+    corners, ids, _ = detector.detectMarkers(gray)
+    aruco.drawDetectedMarkers(frame, corners)
+    handle_marker_detection(ids, corners)
 
     img = cv2glet(frame, 'BGR')
     window.clear()
     img.blit(-WINDOW_WIDTH/2, -WINDOW_HEIGHT/2, 0)
     for model in models:
         model.batch.draw()
+    if len(models) == 1:
+        glDisable(GL_DEPTH_TEST)
+        label.draw()
+        glEnable(GL_DEPTH_TEST)
 
 
 def animate(dt):
@@ -139,9 +206,8 @@ if __name__ == "__main__":
     glEnable(GL_DEPTH_TEST)
     glEnable(GL_CULL_FACE)
 
-    models = []
-    models.append(Model(path="enton.obj", id=4, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=270, rot_y=90, rot_z=270, scaling_factor=0.2))
-    models.append(Model(path="Pokeball.obj", id=5, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=90, rot_y=0, rot_z=0, scaling_factor=30))
+    models.append(Model(path="enton.obj", id=STAGNANT_ID, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=270, rot_y=90, rot_z=270, scaling_factor=0.2))
+    models.append(Model(path="Pokeball.obj", id=MOVING_ID, win_w=WINDOW_WIDTH, win_h=WINDOW_HEIGHT, rot_x=90, rot_y=0, rot_z=0, scaling_factor=30))
 
     # Set the application wide view matrix (camera):
     window.view = Mat4.look_at(position=Vec3(0, 0, WINDOW_Z), target=Vec3(0, 0, 0), up=Vec3(0, 1, 0))

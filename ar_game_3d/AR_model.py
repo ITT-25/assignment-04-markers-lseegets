@@ -55,4 +55,8 @@ class Model:
             self._model.matrix = trans @ rot @ rot_x @ rot_z @ rot_y @ scale        
         except:
             pass
+
+
+    def update_position(self, position):
+        self._position = position
         
